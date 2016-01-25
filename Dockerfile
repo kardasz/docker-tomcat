@@ -9,17 +9,9 @@ RUN \
     apt-get -y dist-upgrade && \
     apt-get -y install wget curl
 
-# grab gosu for easy step-down from root
-RUN gpg --keyserver ha.pool.sks-keyservers.net --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4
-RUN curl -o /usr/local/bin/gosu -SL "https://github.com/tianon/gosu/releases/download/1.2/gosu-$(dpkg --print-architecture)" \
-	&& curl -o /usr/local/bin/gosu.asc -SL "https://github.com/tianon/gosu/releases/download/1.2/gosu-$(dpkg --print-architecture).asc" \
-	&& gpg --verify /usr/local/bin/gosu.asc \
-	&& rm /usr/local/bin/gosu.asc \
-	&& chmod +x /usr/local/bin/gosu
-
 # Download Oracle JDK
-ENV ORACLE_JDK_VERSION jdk-8u66
-ENV ORACLE_JDK_URL     http://download.oracle.com/otn-pub/java/jdk/8u66-b17/jdk-8u66-linux-x64.tar.gz
+ENV ORACLE_JDK_VERSION jdk-8u72
+ENV ORACLE_JDK_URL     http://download.oracle.com/otn-pub/java/jdk/8u72-b15/jdk-8u72-linux-x64.tar.gz
 RUN mkdir -p /opt/jdk/$ORACLE_JDK_VERSION && \
     wget --header "Cookie: oraclelicense=accept-securebackup-cookie" -O /opt/jdk/$ORACLE_JDK_VERSION/$ORACLE_JDK_VERSION.tar.gz $ORACLE_JDK_URL && \
     tar -zxf /opt/jdk/$ORACLE_JDK_VERSION/$ORACLE_JDK_VERSION.tar.gz --strip-components=1 -C /opt/jdk/$ORACLE_JDK_VERSION && \
@@ -42,6 +34,19 @@ RUN gpg --keyserver pool.sks-keyservers.net --recv-keys \
 	F3A04C595DB5B6A5F1ECA43E3B7BBB100D811BBE \
 	F7DA48BB64BCB84ECBA7EE6935CD23C10D498E23
 
+# Use the default unprivileged account. This could be considered bad practice
+# on systems where multiple processes end up being executed by 'daemon' but
+# here we only ever run one process anyway.
+ENV RUN_USER            tomcat
+ENV RUN_USER_UID        5888
+ENV RUN_GROUP           tomcat
+ENV RUN_GROUP_GID       5888
+
+RUN \
+    groupadd --gid ${RUN_GROUP_GID} -r ${RUN_GROUP} && \
+    useradd -r --uid ${RUN_USER_UID} -g ${RUN_GROUP} ${RUN_USER}
+
+
 ENV TOMCAT_MAJOR 8
 ENV TOMCAT_VERSION 8.0.30
 ENV TOMCAT_TGZ_URL https://www.apache.org/dist/tomcat/tomcat-$TOMCAT_MAJOR/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz
@@ -50,7 +55,6 @@ ENV CATALINA_HOME /usr/local/tomcat
 ENV PATH $CATALINA_HOME/bin:$PATH
 
 RUN mkdir -p "$CATALINA_HOME"
-RUN groupadd -r tomcat && useradd -r -g tomcat tomcat
 
 WORKDIR $CATALINA_HOME
 
@@ -62,9 +66,17 @@ RUN set -x \
 	&& rm bin/*.bat \
 	&& rm tomcat.tar.gz*
 
-COPY docker-entrypoint.sh /
-
-ENTRYPOINT ["/docker-entrypoint.sh"]
+RUN chown -R root:root                   ${CATALINA_HOME}/                   \
+    && chmod -R 755                      ${CATALINA_HOME}/                   \
+    && chmod -R 700                      ${CATALINA_HOME}/logs               \
+    && chmod -R 700                      ${CATALINA_HOME}/temp               \
+    && chmod -R 700                      ${CATALINA_HOME}/work               \
+    && chown -R ${RUN_USER}:${RUN_GROUP} ${CATALINA_HOME}/logs               \
+    && chown -R ${RUN_USER}:${RUN_GROUP} ${CATALINA_HOME}/temp               \
+    && chown -R ${RUN_USER}:${RUN_GROUP} ${CATALINA_HOME}/work               \
+    && chown -R ${RUN_USER}:${RUN_GROUP} ${CATALINA_HOME}/conf
+    
+USER ${RUN_USER}:${RUN_GROUP}
 
 EXPOSE 8080
 
