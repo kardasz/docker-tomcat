@@ -9,6 +9,9 @@ RUN \
     apt-get -y dist-upgrade && \
     apt-get -y install wget curl
 
+# Default to UTF-8 file.encoding
+ENV LANG C.UTF-8
+
 # Download Oracle JDK
 ENV ORACLE_JDK_VERSION jdk-8u72
 ENV ORACLE_JDK_URL     http://download.oracle.com/otn-pub/java/jdk/8u72-b15/jdk-8u72-linux-x64.tar.gz
