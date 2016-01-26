@@ -7,7 +7,15 @@ RUN \
     apt-get update && \
     apt-get -y upgrade && \
     apt-get -y dist-upgrade && \
-    apt-get -y install wget curl
+    apt-get -y install wget curl ca-certificates
+
+# grab gosu for easy step-down from root
+RUN gpg --keyserver ha.pool.sks-keyservers.net --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4
+RUN curl -o /usr/local/bin/gosu -SL "https://github.com/tianon/gosu/releases/download/1.2/gosu-$(dpkg --print-architecture)" \
+    && curl -o /usr/local/bin/gosu.asc -SL "https://github.com/tianon/gosu/releases/download/1.2/gosu-$(dpkg --print-architecture).asc" \
+    && gpg --verify /usr/local/bin/gosu.asc \
+    && rm /usr/local/bin/gosu.asc \
+    && chmod +x /usr/local/bin/gosu
 
 # Default to UTF-8 file.encoding
 ENV LANG C.UTF-8
@@ -45,11 +53,6 @@ ENV RUN_USER_UID        5888
 ENV RUN_GROUP           tomcat
 ENV RUN_GROUP_GID       5888
 
-RUN \
-    groupadd --gid ${RUN_GROUP_GID} -r ${RUN_GROUP} && \
-    useradd -r --uid ${RUN_USER_UID} -g ${RUN_GROUP} ${RUN_USER}
-
-
 ENV TOMCAT_MAJOR 8
 ENV TOMCAT_VERSION 8.0.30
 ENV TOMCAT_TGZ_URL https://www.apache.org/dist/tomcat/tomcat-$TOMCAT_MAJOR/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz
@@ -69,17 +72,13 @@ RUN set -x \
 	&& rm bin/*.bat \
 	&& rm tomcat.tar.gz*
 
-RUN chown -R root:root                   ${CATALINA_HOME}/                   \
-    && chmod -R 755                      ${CATALINA_HOME}/                   \
-    && chmod -R 700                      ${CATALINA_HOME}/logs               \
-    && chmod -R 700                      ${CATALINA_HOME}/temp               \
-    && chmod -R 700                      ${CATALINA_HOME}/work               \
-    && chown -R ${RUN_USER}:${RUN_GROUP} ${CATALINA_HOME}/logs               \
-    && chown -R ${RUN_USER}:${RUN_GROUP} ${CATALINA_HOME}/temp               \
-    && chown -R ${RUN_USER}:${RUN_GROUP} ${CATALINA_HOME}/work               \
-    && chown -R ${RUN_USER}:${RUN_GROUP} ${CATALINA_HOME}/conf
-    
-USER ${RUN_USER}:${RUN_GROUP}
+RUN mkdir -p ${CATALINA_HOME}/webapp
+
+COPY docker-entrypoint.sh /entrypoint.sh
+
+RUN chmod a+x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
 
 EXPOSE 8080
 
