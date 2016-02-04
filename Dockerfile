@@ -26,9 +26,16 @@ ENV ORACLE_JDK_URL     http://download.oracle.com/otn-pub/java/jdk/8u72-b15/jdk-
 RUN mkdir -p /opt/jdk/$ORACLE_JDK_VERSION && \
     wget --header "Cookie: oraclelicense=accept-securebackup-cookie" -O /opt/jdk/$ORACLE_JDK_VERSION/$ORACLE_JDK_VERSION.tar.gz $ORACLE_JDK_URL && \
     tar -zxf /opt/jdk/$ORACLE_JDK_VERSION/$ORACLE_JDK_VERSION.tar.gz --strip-components=1 -C /opt/jdk/$ORACLE_JDK_VERSION && \
+    chown -R root:root /opt/jdk/$ORACLE_JDK_VERSION && \
     rm /opt/jdk/$ORACLE_JDK_VERSION/$ORACLE_JDK_VERSION.tar.gz && \
     update-alternatives --install /usr/bin/java java /opt/jdk/$ORACLE_JDK_VERSION/bin/java 100 && \
     update-alternatives --install /usr/bin/javac javac /opt/jdk/$ORACLE_JDK_VERSION/bin/javac 100
+
+ENV JAVA_HOME /opt/jdk/$ORACLE_JDK_VERSION
+ENV JAVA_VERSION 8u72
+ENV JAVA_TRUSTSTORE ${JAVA_HOME}/jre/lib/security/cacerts
+ENV JAVA_TRUSTSTORE_PASSWORD changeit
+ENV JAVA_OPTS "-Djavax.net.ssl.trustStore=${JAVA_TRUSTSTORE} -Djavax.net.ssl.trustStorePassword=${JAVA_TRUSTSTORE_PASSWORD}"
 
 # see https://www.apache.org/dist/tomcat/tomcat-8/KEYS
 RUN gpg --keyserver pool.sks-keyservers.net --recv-keys \
@@ -58,7 +65,8 @@ ENV TOMCAT_VERSION 8.0.30
 ENV TOMCAT_TGZ_URL https://www.apache.org/dist/tomcat/tomcat-$TOMCAT_MAJOR/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz
 
 ENV CATALINA_HOME /usr/local/tomcat
-ENV PATH $CATALINA_HOME/bin:$PATH
+
+ENV PATH $CATALINA_HOME/bin:$JAVA_HOME/bin:$PATH
 
 RUN mkdir -p "$CATALINA_HOME"
 
