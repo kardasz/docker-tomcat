@@ -21,8 +21,8 @@ RUN curl -o /usr/local/bin/gosu -SL "https://github.com/tianon/gosu/releases/dow
 ENV LANG C.UTF-8
 
 # Download Oracle JDK
-ENV ORACLE_JDK_VERSION jdk-8u74
-ENV ORACLE_JDK_URL     http://download.oracle.com/otn-pub/java/jdk/8u74-b02/jdk-8u74-linux-x64.tar.gz
+ENV ORACLE_JDK_VERSION jdk-8u92
+ENV ORACLE_JDK_URL     http://download.oracle.com/otn-pub/java/jdk/8u92-b14/jdk-8u92-linux-x64.tar.gz
 RUN mkdir -p /opt/jdk/$ORACLE_JDK_VERSION && \
     wget --header "Cookie: oraclelicense=accept-securebackup-cookie" -O /opt/jdk/$ORACLE_JDK_VERSION/$ORACLE_JDK_VERSION.tar.gz $ORACLE_JDK_URL && \
     tar -zxf /opt/jdk/$ORACLE_JDK_VERSION/$ORACLE_JDK_VERSION.tar.gz --strip-components=1 -C /opt/jdk/$ORACLE_JDK_VERSION && \
@@ -32,7 +32,7 @@ RUN mkdir -p /opt/jdk/$ORACLE_JDK_VERSION && \
     update-alternatives --install /usr/bin/javac javac /opt/jdk/$ORACLE_JDK_VERSION/bin/javac 100
 
 ENV JAVA_HOME /opt/jdk/$ORACLE_JDK_VERSION
-ENV JAVA_VERSION 8u74
+ENV JAVA_VERSION 8u92
 ENV JAVA_TRUSTSTORE ${JAVA_HOME}/jre/lib/security/cacerts
 ENV JAVA_TRUSTSTORE_PASSWORD changeit
 ENV JAVA_OPTS "-Djavax.net.ssl.trustStore=${JAVA_TRUSTSTORE} -Djavax.net.ssl.trustStorePassword=${JAVA_TRUSTSTORE_PASSWORD}"
@@ -61,7 +61,7 @@ ENV RUN_GROUP           tomcat
 ENV RUN_GROUP_GID       5888
 
 ENV TOMCAT_MAJOR 8
-ENV TOMCAT_VERSION 8.0.30
+ENV TOMCAT_VERSION 8.0.35
 ENV TOMCAT_TGZ_URL https://www.apache.org/dist/tomcat/tomcat-$TOMCAT_MAJOR/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz
 
 ENV CATALINA_HOME /usr/local/tomcat
